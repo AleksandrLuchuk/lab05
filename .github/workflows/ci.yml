@@ -1,32 +1,54 @@
-name: CI
+name: Build, Test & Coverage with Coveralls
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - master
   pull_request:
-    branches: [ main ]
+    types:
+      - opened
+      - synchronize
+  workflow_dispatch: 
 
 jobs:
-  build-test:
+  build:
+    name: Build and Run Tests
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Install dependencies
         run: |
-          sudo apt-get update && sudo apt-get install -y \
-            cmake \
-            g++ \
-            python3-pip
+          sudo apt-get update
+          sudo apt-get install --yes lcov gcovr
 
-      - name: Configure and build
+      - name: Configure CMake with coverage
         run: |
-          mkdir build && cd build
-          cmake ..
+          mkdir build
+          cd build
+          cmake -DCOVERAGE=ON -DBUILD_TESTS=ON ..
+
+      - name: Build project
+        run: |
+          cd build
           make
 
       - name: Run tests
         run: |
           cd build
           ./runTests
+
+      - name: Generate coverage report
+        run: |
+          cd build
+          lcov --directory . --capture --output-file coverage.info
+          lcov --remove coverage.info '/usr/*' --output-file coverage_filtered.info
+          lcov --list coverage_filtered.info
+
+      - name: Upload coverage to Coveralls
+        uses: coverallsapp/github-action@master
+        with:
+          path-to-lcov: build/coverage_filtered.info
+          github-token: ${{ secrets.GITHUB_TOKEN }}
