@@ -1,7 +1,6 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 
-// Подключи заголовочные файлы из папки banking/
 #include "../banking/Account.h"
 #include "../banking/Transaction.h"
 
@@ -28,17 +27,21 @@ TEST(TransactionTest, MakeTransferSuccess) {
   MockAccount to(2, 100);
 
   MockTransaction trans;
+  trans.set_fee(50);
 
   EXPECT_CALL(from, Lock()).Times(1);
   EXPECT_CALL(to, Lock()).Times(1);
+
   EXPECT_CALL(from, Unlock()).Times(1);
   EXPECT_CALL(to, Unlock()).Times(1);
 
   EXPECT_CALL(from, GetBalance()).WillOnce(Return(200));
+
   EXPECT_CALL(from, ChangeBalance(-150)).Times(1);
+
   EXPECT_CALL(to, ChangeBalance(100)).Times(1);
+
   EXPECT_CALL(trans, SaveToDataBase(_, _, 100)).Times(1);
 
-  trans.set_fee(50);
   EXPECT_TRUE(trans.Make(from, to, 100));
 }
